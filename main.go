@@ -1,28 +1,35 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/rushyn/blog-aggregator/internal/database"
 )
 
 
+type apiConfig struct {
+	DB *database.Queries
+}
+
+var apiCfg = apiConfig{}
+
 type payload interface{
-	message() status
+	retrunSelf() interface{}
 }
 
 type status struct{
 	Status string `json:"status"`
 }
 
-func (self status) message() status {
-	return self
+func (s status) retrunSelf() interface{} {
+	return s
 }
-
-
 
 func main() {
 	err := godotenv.Load()
@@ -30,12 +37,21 @@ func main() {
 		log.Fatal(err)
 	}
 	
+	db, err := sql.Open("postgres", os.Getenv("dbURL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	apiCfg.DB = database.New(db)
+
 	port := os.Getenv("PORT")
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /v1/healthz", server_status)
 	mux.HandleFunc("GET /v1/err", with_err)
+	mux.HandleFunc("POST /v1/users", create_user)
+	mux.HandleFunc("GET /v1/users", get_user)
 
 
 	svr := &http.Server{
@@ -51,7 +67,7 @@ func main() {
 func respondWithJSON(w http.ResponseWriter, code int, p payload){
 
 
-	data, err := json.Marshal(p.message())
+	data, err := json.Marshal(p.retrunSelf())
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
@@ -103,3 +119,5 @@ func with_err (w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, 500, "Internal Server Error")
 
 }
+
+
