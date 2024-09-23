@@ -12,12 +12,13 @@ import (
 	"github.com/rushyn/blog-aggregator/internal/database"
 )
 
-
 type apiConfig struct {
 	DB *database.Queries
+
 }
 
 var apiCfg = apiConfig{}
+
 
 type payload interface{
 	retrunSelf() interface{}
@@ -48,21 +49,27 @@ func main() {
 
 	mux := http.NewServeMux()
 
+
 	mux.HandleFunc("GET /v1/healthz", server_status)
 	mux.HandleFunc("GET /v1/err", with_err)
 	mux.HandleFunc("POST /v1/users", create_user)
 	mux.HandleFunc("GET /v1/users", get_user)
+	mux.HandleFunc("GET /users", apiCfg.middAuthenticate(apiCfg.RetrunUserInfo))
+	mux.HandleFunc("POST /v1/feeds", apiCfg.middAuthenticate(apiCfg.UpdateFeed))
 
+	
 
+	
 	svr := &http.Server{
 		Addr: ":" + port,
 		Handler: mux,
+
 	}
 
+	
 	log.Printf("Http server starting on port: %s\n", port)
 	log.Fatal(svr.ListenAndServe())
 }
-
 
 func respondWithJSON(w http.ResponseWriter, code int, p payload){
 

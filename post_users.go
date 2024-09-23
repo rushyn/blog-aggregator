@@ -36,6 +36,15 @@ func (u *user) populateSelf(c database.CreateUserParams) {
 	u.Api_key = c.ApiKey
 }
 
+func dbUserToUser(c database.User) user {
+	return user{
+		ID: c.ID,
+		Created_at: c.CreatedAt,
+		Updated_at: c.UpdatedAt,
+		Name: c.Name,
+		Api_key: c.ApiKey,
+	}
+}
 
 
 func create_user (w http.ResponseWriter, r *http.Request) {
@@ -83,6 +92,7 @@ func create_user (w http.ResponseWriter, r *http.Request) {
 	insertedAuthor, err := apiCfg.DB.CreateUser(ctx, databaseEntrey)
 	if err != nil{
 		log.Println(err)
+		respondWithError(w, 500, "Something went wrong")
 		return
 	}
 
